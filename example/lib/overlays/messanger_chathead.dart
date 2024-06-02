@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 class MessangerChatHead extends StatefulWidget {
@@ -30,10 +31,28 @@ class _MessangerChatHeadState extends State<MessangerChatHead> {
       _kPortNameOverlay,
     );
     log("$res : HOME");
-    _receivePort.listen((message) {
+    _receivePort.listen((message) async {
       log("message from UI: $message");
       setState(() {
-        messageFromOverlay = 'message from UI: $message';
+        messageFromOverlay = '$message';
+      });
+      // homePort?.send('expand');
+      await FlutterOverlayWindow.resizeOverlay(
+        200,
+        (MediaQuery.of(context).size.height).toInt(),
+        true,
+      );
+
+      // delay 3 seconds
+      await Future.delayed(const Duration(seconds: 3));
+      log('Try to dismiss');
+      await FlutterOverlayWindow.resizeOverlay(
+        80,
+        (MediaQuery.of(context).size.height).toInt(),
+        true,
+      );
+      setState(() {
+        messageFromOverlay = null;
       });
     });
   }
@@ -44,56 +63,68 @@ class _MessangerChatHeadState extends State<MessangerChatHead> {
       color: Colors.transparent,
       elevation: 0.0,
       child: GestureDetector(
-        onTap: () async {
-          if (_currentShape == BoxShape.rectangle) {
-            await FlutterOverlayWindow.resizeOverlay(50, 100, true);
-            setState(() {
-              _currentShape = BoxShape.circle;
-            });
-          } else {
-            await FlutterOverlayWindow.resizeOverlay(
-              WindowSize.matchParent,
-              WindowSize.matchParent,
-              false,
-            );
-            setState(() {
-              _currentShape = BoxShape.rectangle;
-            });
-          }
-        },
         child: Container(
           height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: _currentShape,
-          ),
+          decoration: const BoxDecoration(
+              // shape: _currentShape,
+              ),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _currentShape == BoxShape.rectangle
-                    ? SizedBox(
-                        width: 200.0,
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.black,
+                Row(
+                  children: [
+                    //button close
+                    Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
+                          child: Image.asset(
+                            'assets/icons/robot.png',
+                            width: 50.0,
+                            height: 50.0,
                           ),
-                          onPressed: () {
-                            homePort ??= IsolateNameServer.lookupPortByName(
-                              _kPortNameHome,
-                            );
-                            homePort?.send('Date: ${DateTime.now()}');
-                          },
-                          child: const Text("Send message to UI"),
                         ),
-                      )
-                    : const SizedBox.shrink(),
-                _currentShape == BoxShape.rectangle
-                    ? messageFromOverlay == null
-                        ? const FlutterLogo()
-                        : Text(messageFromOverlay ?? '')
-                    : const FlutterLogo()
+                        Positioned(
+                          right: 30,
+                          top: -13,
+                          child: IconButton(
+                            onPressed: () async {
+                              log('Try to close');
+                              await FlutterOverlayWindow.closeOverlay().then(
+                                  (value) => log('STOPPED: alue: $value'));
+                            },
+                            icon: const Icon(Icons.cancel, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // message shape
+                    messageFromOverlay == null
+                        ? const SizedBox.shrink()
+                        : Container(
+                            padding: const EdgeInsets.all(20.0),
+                            decoration: BoxDecoration(
+                              color: color,
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 2.0,
+                              ),
+                              borderRadius: BorderRadius.circular(10.0),
+                              shape: BoxShape.rectangle,
+                            ),
+                            child: Text(
+                              messageFromOverlay!,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 20.0,
+                              ),
+                            ),
+                          )
+                  ],
+                )
               ],
             ),
           ),
