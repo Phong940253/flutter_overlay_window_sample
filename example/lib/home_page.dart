@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
                       height:
                           (MediaQuery.of(context).size.height * 0.3).toInt(),
                       width: 200,
-                      startPosition: const OverlayPosition(0, -259),
+                      startPosition: const OverlayPosition(0, 259),
                     );
                   },
                   child: const Text("Show Overlay"),
